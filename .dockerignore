@@ -1,0 +1,39 @@
+# Secrets & local-only (never bake into image layers)
+.env
+.env.*
+!.env.example
+
+# Local dev scripts (compose uses uvicorn + root/stack .env)
+run_server.sh
+run_server.sh.example
+
+# Git / editor
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Python junk
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Docs / tests (not needed at runtime in image)
+README.md
+test_*.py
+*.md
+
+# Logs & local vector data
+*.log
+logs/
+.qdrant/

@@ -1,0 +1,33 @@
+#!/bin/bash
+# Copy to run_server.sh and customize, or rely on .env only:
+#   cp run_server.sh.example run_server.sh
+#
+# Local dev (not used by Docker staging — compose runs uvicorn on port 8001).
+
+set -e
+cd "$(dirname "$0")"
+
+export PYTHONPATH="$(pwd):${PYTHONPATH}"
+
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+else
+  echo "Missing .env — copy from .env.example and set your API keys."
+  exit 1
+fi
+
+PORT="${PORT:-8001}"
+
+echo "Starting Research Assistant on 0.0.0.0:${PORT}"
+echo "  VLLM_API_URL=${VLLM_API_URL:-<unset>}"
+echo "  EMBEDDING_API_URL=${EMBEDDING_API_URL:-<unset>}"
+echo "  QDRANT_HOST=${QDRANT_HOST:-localhost}:${QDRANT_PORT:-6333}"
+
+# Optional: verify remote APIs before serving
+# python test_embedding.py
+# python test_vllm.py
+
+exec python -m uvicorn api.app:app --host 0.0.0.0 --port "${PORT}" --reload
