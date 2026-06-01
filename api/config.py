@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     embedding_api_key: str = os.getenv("EMBEDDING_API_KEY", "")
     embedding_dim: int = int(os.getenv("EMBEDDING_DIM", "1536"))
 
+    # Embedding fallback (used when the primary endpoint above is unreachable).
+    embedding_fallback_api_url: str = os.getenv("EMBEDDING_FALLBACK_API_URL", "")
+    embedding_fallback_api_key: str = os.getenv("EMBEDDING_FALLBACK_API_KEY", "")
+    embedding_fallback_model: str = os.getenv("EMBEDDING_FALLBACK_MODEL", "")
+
     # Reranker API settings
     reranker_api_url: str = os.getenv("RERANKER_API_URL", "http://172.16.0.116:8091/v1")
     reranker_model: str = os.getenv("RERANKER_MODEL", "rerank")
@@ -32,8 +37,9 @@ class Settings(BaseSettings):
     
     # Qdrant settings
     qdrant_host: str = os.getenv("QDRANT_HOST", "localhost")
-    qdrant_port: int = int(os.getenv("QDRANT_PORT", "6343"))
+    qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))
     qdrant_collection: str = os.getenv("QDRANT_COLLECTION", "research_papers")
+    qdrant_api_key: str = os.getenv("QDRANT_API_KEY", "")
     
     # Research Assistant settings
     top_k: int = int(os.getenv("TOP_K", "3"))

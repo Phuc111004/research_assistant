@@ -21,22 +21,38 @@ class EmbeddingClient:
         self.model = model or settings.embedding_model
         # Default to OpenAI text-embedding-3-small native dim (1536). Override via EMBEDDING_DIM env.
         self.target_dim = target_dim or settings.embedding_dim
-        
-        # Update headers with the correct authorization format
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-        
-        # Some VLLM deployments also accept the key as a separate header
-        if self.api_key:
-            self.headers["api-key"] = self.api_key
-        
-        # Test connection
+
+        # Optional fallback endpoint (e.g. OpenAI) used when the primary one is unreachable.
+        self.fallback_api_url = settings.embedding_fallback_api_url
+        self.fallback_api_key = settings.embedding_fallback_api_key
+        self.fallback_model = settings.embedding_fallback_model or self.model
+
+        self._set_headers(self.api_key)
+
+        # Test connection; switch to fallback endpoint if the primary one fails.
         self.api_available = self._test_connection()
+        if not self.api_available and self.fallback_api_url:
+            print(f"Primary embedding API at {self.api_url} unavailable. "
+                  f"Switching to fallback: {self.fallback_api_url}")
+            self.api_url = self.fallback_api_url
+            self.api_key = self.fallback_api_key
+            self.model = self.fallback_model
+            self._set_headers(self.api_key)
+            self.api_available = self._test_connection()
+
         if not self.api_available:
             print(f"Warning: Could not connect to Embedding API at {self.api_url}. Fallback mode will be used.")
-    
+
+    def _set_headers(self, api_key: str) -> None:
+        """Build request headers for the currently selected endpoint."""
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        # Some VLLM deployments also accept the key as a separate header
+        if api_key:
+            self.headers["api-key"] = api_key
+
     def _test_connection(self) -> bool:
         """Test connection to Embedding API"""
         try:

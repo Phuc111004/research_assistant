@@ -17,10 +17,13 @@ class QdrantVectorDB:
         host: str = None,
         port: int = None
     ):
-        # Initialize Qdrant client
+        # Initialize Qdrant client. api_key is required when the Qdrant server
+        # has QDRANT__SERVICE__API_KEY set; left empty for unauthenticated servers.
         self.client = QdrantClient(
             host=host or settings.qdrant_host,
-            port=port or settings.qdrant_port
+            port=port or settings.qdrant_port,
+            api_key=settings.qdrant_api_key or None,
+            https=False,
         )
         
         self.collection_name = collection_name or settings.qdrant_collection
