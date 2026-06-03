@@ -129,6 +129,35 @@ class ResearchAssistant:
             "papers": papers,
             "using_fallback": using_fallback
         }
+
+    def search_papers(
+        self,
+        query_text: str,
+        limit: int = 20,
+        user_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Vector search only (no LLM). Used by backend recommendations."""
+        if self.vector_db is None:
+            return []
+
+        papers = self.vector_db.search(
+            query=query_text,
+            limit=max(limit, 1),
+            user_id=user_id,
+        )
+
+        for paper in papers:
+            if "keywords" in paper and paper["keywords"] is not None:
+                if isinstance(paper["keywords"], str):
+                    paper["keywords"] = [
+                        k.strip() for k in paper["keywords"].split(",")
+                    ]
+                elif not isinstance(paper["keywords"], list):
+                    paper["keywords"] = []
+            else:
+                paper["keywords"] = []
+
+        return papers
     
     def delete_paper(self, paper_id: str) -> bool:
         """Delete a paper from the database"""

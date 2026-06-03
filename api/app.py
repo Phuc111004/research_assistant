@@ -89,6 +89,17 @@ class QueryResponse(BaseModel):
     papers: List[Dict[str, Any]]
     using_fallback: bool = Field(False, description="Whether fallback mode was used (no VLLM API)")
 
+
+class SearchRequest(BaseModel):
+    query: str
+    limit: int = Field(20, ge=1, le=100)
+    user_id: Optional[str] = None
+
+
+class SearchResponse(BaseModel):
+    query: str
+    papers: List[Dict[str, Any]]
+
 # Routes
 @app.post("/papers", status_code=201)
 async def add_paper(paper: PaperSchema):
@@ -109,6 +120,26 @@ async def add_paper(paper: PaperSchema):
         raise HTTPException(status_code=500, detail="Failed to add paper")
     
     return {"message": "Paper added successfully", "paper_id": paper.paper_id}
+
+@app.post("/search", response_model=SearchResponse)
+async def search(request: SearchRequest):
+    """Semantic vector search over embedded papers (no LLM answer)."""
+    if vector_db is None:
+        raise HTTPException(status_code=503, detail="Vector database is not available")
+
+    try:
+        papers = assistant.search_papers(
+            query_text=request.query,
+            limit=request.limit,
+            user_id=request.user_id,
+        )
+        return {"query": request.query, "papers": papers}
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"Error processing search: {str(e)}")
+        print(f"Error trace: {error_trace}")
+        raise HTTPException(status_code=500, detail="Search failed") from e
+
 
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest, req: Request):
