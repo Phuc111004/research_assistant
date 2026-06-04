@@ -4,6 +4,7 @@ import json
 from typing import List, Dict, Any, Tuple
 from tenacity import retry, stop_after_attempt, wait_exponential
 from .config import settings
+from .citations import default_citation_system_prompt
 
 class VLLMClient:
     def __init__(self, api_url: str = None, api_key: str = None, model: str = None):
@@ -82,12 +83,7 @@ class VLLMClient:
             return self._generate_fallback_response(query, papers), True
             
         if not system_prompt:
-            system_prompt = (
-                "You are a helpful research assistant that provides accurate information based on scientific papers. "
-                "Answer the user's query using the provided research papers as references. "
-                "If the papers don't contain relevant information to answer the query, state this clearly. "
-                "Always cite the paper titles when referring to specific information from them."
-            )
+            system_prompt = default_citation_system_prompt()
         
         # Format papers as context
         paper_context = ""
@@ -162,14 +158,20 @@ class VLLMClient:
         
         for i, paper in enumerate(top_papers, 1):
             title = paper.get('title', 'Untitled Paper')
+            abstract = paper.get('abstract', '')
+            snippet = abstract[:200] + ("..." if len(abstract) > 200 else "")
             keywords = paper.get('keywords', [])
-            
-            response += f"• Paper {i}: {title}\n"
+
+            response += f"• {title} [{i}]\n"
+            if snippet:
+                response += f"  {snippet}\n"
             if keywords and len(keywords) > 0:
                 response += f"  Keywords: {', '.join(keywords[:5])}\n"
             response += "\n"
-            
-        # Add an explanation about the nature of the response
-        response += "\nNote: OpenAI API is currently unavailable. This is a basic response showing the most relevant papers. Please check the Sources tab to view full abstracts and details."
+
+        response += (
+            "\nNote: LLM is unavailable. Hover citation markers [n] or open Sources "
+            "for full paper details."
+        )
         
         return response 

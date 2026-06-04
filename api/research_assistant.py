@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict, Any, Optional, Tuple
 from api.vllm_client import VLLMClient
+from api.citations import build_citations, default_citation_system_prompt
 from vectordb.qdrant_client import QdrantVectorDB
 
 class ResearchAssistant:
@@ -86,7 +87,8 @@ class ResearchAssistant:
                 "query": query_text,
                 "answer": "I'm sorry, but the vector database is currently unavailable. Please try again later.",
                 "papers": [],
-                "using_fallback": True
+                "citations": [],
+                "using_fallback": True,
             }
             
         # Retrieve relevant papers (ensure at least 3)
@@ -115,19 +117,21 @@ class ResearchAssistant:
             answer = temp_client._generate_fallback_response(query_text, papers)
             using_fallback = True
         else:
-            # Generate answer using VLLM
+            prompt = system_prompt or default_citation_system_prompt()
             answer, using_fallback = self.vllm_client.generate_response(
                 query=query_text,
                 papers=papers,
-                system_prompt=system_prompt
+                system_prompt=prompt,
             )
-        
-        # Return combined result
+
+        citations = build_citations(papers)
+
         return {
             "query": query_text,
             "answer": answer,
             "papers": papers,
-            "using_fallback": using_fallback
+            "citations": citations,
+            "using_fallback": using_fallback,
         }
 
     def search_papers(
