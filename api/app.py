@@ -79,14 +79,27 @@ class PaperSchema(BaseModel):
     user_id: str
     metadata: Optional[Dict[str, Any]] = None
 
+class CitationSchema(BaseModel):
+    index: int
+    paper_id: str
+    title: str
+    snippet: str = ""
+    score: Optional[float] = None
+    doi: Optional[str] = None
+    url: Optional[str] = None
+
+
 class QueryRequest(BaseModel):
     query: str
     user_id: Optional[str] = None
+    system_prompt: Optional[str] = None
+
 
 class QueryResponse(BaseModel):
     query: str
     answer: str
     papers: List[Dict[str, Any]]
+    citations: List[CitationSchema] = Field(default_factory=list)
     using_fallback: bool = Field(False, description="Whether fallback mode was used (no VLLM API)")
 
 
@@ -150,13 +163,15 @@ async def query(request: QueryRequest, req: Request):
             "query": request.query,
             "answer": "I'm sorry, but the vector database is currently unavailable. Please try again later.",
             "papers": [],
-            "using_fallback": True
+            "citations": [],
+            "using_fallback": True,
         }
     
     try:
         result = assistant.query(
             query_text=request.query,
-            user_id=request.user_id
+            user_id=request.user_id,
+            system_prompt=request.system_prompt,
         )
         return result
     except Exception as e:
@@ -167,7 +182,8 @@ async def query(request: QueryRequest, req: Request):
             "query": request.query,
             "answer": f"I encountered an error while processing your query: {str(e)}. The server logs have more details.",
             "papers": [],
-            "using_fallback": True
+            "citations": [],
+            "using_fallback": True,
         }
 
 @app.delete("/papers/{paper_id}")
